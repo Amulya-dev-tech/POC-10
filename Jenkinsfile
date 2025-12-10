@@ -32,7 +32,15 @@ pipeline {
             steps {
                 // Ensure a SonarQube server is configured and the name matches here
                 withSonarQubeEnv('SonarQube') {
-                    sh 'mvn -B sonar:sonar'
+                    sh '''
+                      mvn -B -DskipTests clean verify
+                      mvn -B sonar:sonar \
+                        -Dsonar.projectKey=gs-spring-boot \
+                        -Dsonar.projectName=gs-spring-boot \
+                        -Dsonar.java.binaries=target/classes \
+                        -Dsonar.junit.reportPaths=target/surefire-reports \
+                        -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
+                    '''
                 }
             }
         }
