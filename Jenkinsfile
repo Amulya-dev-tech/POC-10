@@ -12,7 +12,7 @@ pipeline {
     tools {
         // Must match names configured in:
         // Manage Jenkins → Global Tool Configuration
-        maven 'maven-3.8.4'
+        maven 'maven-3.9.11'
         // Uncomment only if you have a configured JDK tool
         // jdk 'jdk-17'
     }
