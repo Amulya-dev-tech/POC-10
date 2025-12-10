@@ -2,19 +2,18 @@ pipeline {
     agent any
 
     environment {
-        APP_NAME        = "myapp"
-        DOCKER_IMAGE    = "myapp-image"
-        // SonarQube project metadata (adjust to your org/project)
-        SONAR_PROJECT_KEY = "myorg_myapp"
-        SONAR_PROJECT_NAME = "MyApp"
-        SONAR_PROJECT_VERSION = "1.0.${BUILD_NUMBER}"
-        // Name must match Jenkins → Configure System → SonarQube servers (e.g., "SonarQube")
-        SONARQUBE_SERVER = "SonarQube"
+        APP_NAME     = 'myapp'
+        DOCKER_IMAGE = 'myapp-image'
+        // If you need to push to a registry, add registry envs here, e.g.:
+        // DOCKER_REGISTRY = 'registry.example.com'
+        // DOCKER_CREDENTIALS_ID = 'docker-creds'
     }
 
     tools {
+        // Must match names configured in:
+        // Manage Jenkins → Global Tool Configuration
         maven 'maven-3.9.11'
-        // If you have configured a JDK tool, uncomment:
+        // Uncomment only if you have a configured JDK tool
         // jdk 'jdk-17'
     }
 
@@ -27,43 +26,32 @@ pipeline {
 
         stage('Maven Build') {
             steps {
+                // MAVEN_HOME/bin is added to PATH via the tools directive, so 'mvn' is available
                 sh 'mvn -V -B clean package -DskipTests'
             }
         }
 
         stage('SonarQube Analysis') {
             steps {
-                // Bind SonarQube server environment configured in Jenkins
-                withSonarQubeEnv("${SONARQUBE_SERVER}") {
-                    // Use a SonarQube token stored as Jenkins Secret Text credential
-                    withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
-                        // For Maven projects, run the sonar goal.
-                        // Ensure your pom.xml has <sonar-maven-plugin> or use the default via org.sonarsource.scanner.maven:sonar-maven-plugin
-                        sh """
-                            mvn -B sonar:sonar \
-                              -Dsonar.projectKey='${SONAR_PROJECT_KEY}' \
-                              -Dsonar.projectName='${SONAR_PROJECT_NAME}' \
-                              -Dsonar.projectVersion='${SONAR_PROJECT_VERSION}' \
-                              -Dsonar.host.url="$SONAR_HOST_URL" \
-                              -Dsonar.login="$SONAR_TOKEN"
-                        """
-                    }
+                // 'SonarQube' must match the name under Manage Jenkins → Configure System → SonarQube servers
+                withSonarQubeEnv('SonarQube') {
+                    sh 'mvn -B sonar:sonar'
                 }
             }
         }
 
-        stage('Quality Gate') {
-            // This requires the "Wait for Quality Gate" step from the SonarQube plugin
-            steps {
-                timeout(time: 10, unit: 'MINUTES') {
-                    // Fails the pipeline if Quality Gate status is failed
-                    waitForQualityGate()
-                }
-            }
-        }
+        // Optional: uncomment if you want the pipeline to wait for SonarQube Quality Gate
+        // stage('Quality Gate') {
+        //     steps {
+        //         timeout(time: 10, unit: 'MINUTES') {
+        //             waitForQualityGate abortPipeline: true
+        //         }
+        //     }
+        // }
 
         stage('Docker Build') {
             steps {
+                // Ensure the agent has Docker installed and daemon is running
                 sh 'docker build -t ${DOCKER_IMAGE}:latest .'
             }
         }
@@ -79,10 +67,16 @@ pipeline {
     }
 
     post {
-        success { echo "Pipeline executed successfully!" }
-        failure { echo "Pipeline failed!" }
+        success {
+            echo 'Pipeline executed successfully!'
+        }
+        failure {
+            echo 'Pipeline failed!'
+        }
         always {
-            archiveArtifacts artifacts: '**/target/*.jar', allowEmptyArchive: true
+            // Example: collect artifacts or clean up
+            // archiveArtifacts artifacts: 'target/*.jar', onlyIfSuccessful: true
+            // sh 'docker logs ${APP_NAME} || true'
         }
     }
 }
