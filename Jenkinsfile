@@ -1,46 +1,43 @@
 pipeline {
     agent any
-
+ 
     environment {
         APP_NAME     = 'myapp'
         DOCKER_IMAGE = 'myapp-image'
-        // If you need to push to a registry, add registry envs here, e.g.:
         // DOCKER_REGISTRY = 'registry.example.com'
         // DOCKER_CREDENTIALS_ID = 'docker-creds'
     }
-
+ 
     tools {
-        // Must match names configured in:
-        // Manage Jenkins → Global Tool Configuration
-        maven 'maven-3.9.11'
-        // Uncomment only if you have a configured JDK tool
+        // Change this to match the name configured in Jenkins Global Tool Configuration.
+        // Either set up a tool named "maven-3.9.11" in Jenkins, or change this name below.
+        maven 'Maven3'
         // jdk 'jdk-17'
     }
-
+ 
     stages {
         stage('Git Clone') {
             steps {
                 git branch: 'main', url: 'https://github.com/Amulya-dev-tech/POC-10.git'
             }
         }
-
+ 
         stage('Maven Build') {
             steps {
-                // MAVEN_HOME/bin is added to PATH via the tools directive, so 'mvn' is available
                 sh 'mvn -V -B clean package -DskipTests'
             }
         }
-
+ 
         stage('SonarQube Analysis') {
             steps {
-                // 'SonarQube' must match the name under Manage Jenkins → Configure System → SonarQube servers
+                // Ensure a SonarQube server is configured and the name matches here
                 withSonarQubeEnv('SonarQube') {
                     sh 'mvn -B sonar:sonar'
                 }
             }
         }
-
-        // Optional: uncomment if you want the pipeline to wait for SonarQube Quality Gate
+ 
+        // Optional Quality Gate stage:
         // stage('Quality Gate') {
         //     steps {
         //         timeout(time: 10, unit: 'MINUTES') {
@@ -48,14 +45,13 @@ pipeline {
         //         }
         //     }
         // }
-
+ 
         stage('Docker Build') {
             steps {
-                // Ensure the agent has Docker installed and daemon is running
                 sh 'docker build -t ${DOCKER_IMAGE}:latest .'
             }
         }
-
+ 
         stage('Docker Run') {
             steps {
                 sh '''
@@ -65,7 +61,7 @@ pipeline {
             }
         }
     }
-
+ 
     post {
         success {
             echo 'Pipeline executed successfully!'
@@ -74,9 +70,10 @@ pipeline {
             echo 'Pipeline failed!'
         }
         always {
-            // Example: collect artifacts or clean up
+            // At least one real step is required — echo is safe.
+            echo "Pipeline finished for ${APP_NAME}. Cleaning up / archiving artifacts if needed."
+            // Example artifact archiving (uncomment if you want to use it):
             // archiveArtifacts artifacts: 'target/*.jar', onlyIfSuccessful: true
-            // sh 'docker logs ${APP_NAME} || true'
         }
     }
 }
