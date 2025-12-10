@@ -32,7 +32,7 @@ pipeline {
             steps {
                 // Ensure a SonarQube server is configured and the name matches here
                 withSonarQubeEnv('SonarQube') {
-                   sh 'sonar:sonar'
+                    sh 'mvn -B sonar:sonar'
                 }
             }
         }
