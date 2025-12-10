@@ -20,7 +20,7 @@ pipeline {
     stages {
         stage('Git Clone') {
             steps {
-                git branch: 'main', url: 'https://github.com/Amulya-dev-tech/POC_3.git'
+                git branch: 'main', url: 'https://github.com/Amulya-dev-tech/POC-10.git'
             }
         }
 
@@ -60,7 +60,7 @@ pipeline {
             steps {
                 sh '''
                     docker rm -f ${APP_NAME} || true
-                    docker run -d --name ${APP_NAME} -p 8087:8080 ${DOCKER_IMAGE}:latest
+                    docker run -d --name ${APP_NAME} -p 8080:8080 ${DOCKER_IMAGE}:latest
                 '''
             }
         }
